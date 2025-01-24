@@ -1348,6 +1348,463 @@ exports.init = init;
 //   });
 // });
 
+// document.addEventListener("DOMContentLoaded", function () {
+//   const generateButton = document.getElementById("generate-mindmap");
+//   const downloadButton = document.getElementById("download-map");
+//   const modal = document.getElementById("mindmap-modal");
+//   const closeModalButton = document.getElementById("close-modal");
+//   const addNode = document.getElementById("add-node");
+//   const addRelation = document.getElementById("add-relation");
+
+//   if (!generateButton || !modal || !downloadButton) {
+//     console.error("Required elements not found.");
+//     return;
+//   }
+
+//   window.addEventListener("beforeunload", () => {
+//     session.close();
+//     driver.close();
+//   });
+
+//   // Close Modal
+//   closeModalButton.addEventListener("click", function () {
+//     modal.style.display = "none";
+//     console.log("Modal closed.");
+//   });
+
+//   // Function to download the mind map as an image
+//   downloadButton.addEventListener("click", function () {
+//     const svgElement = document.querySelector("#graph-visualization svg");
+
+//     if (!svgElement) {
+//       console.error("SVG element not found.");
+//       return;
+//     }
+
+//     // Temporarily adjust SVG size to fit all nodes and links
+//     const bbox = svgElement.getBBox();
+//     const originalWidth = svgElement.getAttribute("width");
+//     const originalHeight = svgElement.getAttribute("height");
+
+//     svgElement.setAttribute("width", bbox.width);
+//     svgElement.setAttribute("height", bbox.height);
+//     svgElement.setAttribute("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+
+//     // Convert SVG to data URL
+//     const svgData = new XMLSerializer().serializeToString(svgElement);
+//     const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+//     const url = URL.createObjectURL(svgBlob);
+
+//     // Create an image to render the SVG
+//     const image = new Image();
+//     image.onload = () => {
+//       const scale = 3; // Increase this value for higher quality
+//       const canvas = document.createElement("canvas");
+//       canvas.width = bbox.width * scale;
+//       canvas.height = bbox.height * scale;
+
+//       const ctx = canvas.getContext("2d");
+//       ctx.fillStyle = "white"; // Optional: Set background color
+//       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+//       // Scale the context to render a higher resolution
+//       ctx.scale(scale, scale);
+//       ctx.drawImage(image, 0, 0);
+
+//       // Trigger download of PNG
+//       canvas.toBlob((blob) => {
+//         const link = document.createElement("a");
+//         link.href = URL.createObjectURL(blob);
+//         link.download = "mindmap.png";
+//         link.click();
+//         URL.revokeObjectURL(link.href);
+//       }, "image/png");
+
+//       // Revert the SVG element to its original size
+//       svgElement.setAttribute("width", originalWidth);
+//       svgElement.setAttribute("height", originalHeight);
+//       svgElement.setAttribute("viewBox", `0 0 ${originalWidth} ${originalHeight}`);
+//     };
+
+//     image.src = url;
+//   });
+
+//   // Initialize when Generate Button is Clicked
+//   generateButton.addEventListener("click", function () {
+//     modal.style.display = "flex";
+//     console.log("Mind map generation started.");
+
+//     const neo4j = require("neo4j-driver");
+
+//     // Initialize Neo4j Driver
+//     const driver = neo4j.driver("neo4j+s://7b2adf95.databases.neo4j.io", neo4j.auth.basic("neo4j", "INGaFxLI5FZnILVRQY6sG1ZOxtwzexRAXoCI2aeZ3UM"));
+
+//     const session = driver.session();
+
+//     const mindmapContainer = document.getElementById("graph-visualization");
+
+//     if (!mindmapContainer) {
+//       console.error("Mindmap container not found.");
+//       return;
+//     }
+
+//     // Clear previous visualization (if any)
+//     d3.select("#graph-visualization svg").remove();
+
+//     // SVG and Canvas Setup
+//     const width = mindmapContainer.clientWidth || 800;
+//     const height = mindmapContainer.clientHeight || 600;
+
+//     const svg = d3.select("#graph-visualization").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet").style("cursor", "pointer");
+
+//     const zoomGroup = svg.append("g"); // Group for zooming and panning
+//     const linkGroup = zoomGroup.append("g").attr("class", "links");
+//     const nodeGroup = zoomGroup.append("g").attr("class", "nodes");
+
+//     const zoomBehavior = d3
+//       .zoom()
+//       .scaleExtent([0.5, 5]) // Zoom range
+//       .on("zoom", (event) => {
+//         zoomGroup.attr("transform", event.transform);
+//       });
+
+//     svg.call(zoomBehavior);
+
+//     let nodes = [];
+//     let links = [];
+
+//     const simulation = d3
+//       .forceSimulation(nodes)
+//       .force(
+//         "link",
+//         d3
+//           .forceLink(links)
+//           .id((d) => d.id)
+//           .distance(150)
+//       ) // Increase link distance
+//       .force("charge", d3.forceManyBody().strength(-300)) // Adjust charge to space nodes apart
+//       .force(
+//         "collide",
+//         d3.forceCollide().radius((d) => Math.max(30, d.text.length * 5) + 10)
+//       ) // Avoid overlap
+//       .force("center", d3.forceCenter(width / 2, height / 2))
+//       .on("tick", ticked);
+
+//     async function fetchFromDatabase() {
+//       try {
+//         const result = await session.run("MATCH (n)-[r]->(m) RETURN n, r, m");
+
+//         // Clear previous data
+//         nodes = [];
+//         links = [];
+
+//         result.records.forEach((record) => {
+//           const source = record.get("n").properties;
+//           const target = record.get("m").properties;
+//           const relationship = record.get("r").type;
+
+//           // Add nodes if not already in the array
+//           if (!nodes.some((node) => node.id === source.name)) {
+//             nodes.push({
+//               id: source.name,
+//               text: source.name,
+//             });
+//           }
+//           if (!nodes.some((node) => node.id === target.name)) {
+//             nodes.push({
+//               id: target.name,
+//               text: target.name,
+//             });
+//           }
+
+//           links.push({
+//             source: source.name,
+//             target: target.name,
+//             type: relationship,
+//           });
+//         });
+
+//         const hierarchyData = buildHierarchy(nodes, links);
+//         applyTreeLayout(hierarchyData);
+//         update(); // Update visualization
+//       } catch (error) {
+//         console.error("Error fetching data from Neo4j:", error);
+//       }
+//     }
+
+//     fetchFromDatabase();
+
+//     function buildHierarchy(nodes, links) {
+//       const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+//       links.forEach((link) => {
+//         const parent = nodeMap.get(link.source);
+//         const child = nodeMap.get(link.target);
+
+//         if (!parent.children) {
+//           parent.children = [];
+//         }
+//         parent.children.push(child);
+//       });
+
+//       // Assume the first node in `nodes` is the root
+//       return d3.hierarchy(nodeMap.get(nodes[0].id));
+//     }
+
+//     function applyTreeLayout(hierarchyData) {
+//       const treeLayout = d3.tree().size([width, height - 100]);
+//       const treeData = treeLayout(hierarchyData);
+
+//       treeData.descendants().forEach((d) => {
+//         const node = nodes.find((n) => n.id === d.data.id);
+//         if (node) {
+//           node.x = d.x;
+//           node.y = d.y;
+//         }
+//       });
+//     }
+
+//     let selectedLevel = null; // To store the currently selected level
+//     const colorMap = {}; // To store custom colors for each level
+//     const defaultColorScale = d3.scaleOrdinal(d3.schemeCategory10); // Define color scale at a global level
+
+//     function update() {
+//       console.log("Updating visualization...");
+
+//       // Calculate the depth of each node
+//       const hierarchyData = d3.hierarchy({
+//         children: nodes.map((node) => ({
+//           ...node,
+//           children: links.filter((link) => link.source === node.id).map((link) => nodes.find((childNode) => childNode.id === link.target)),
+//         })),
+//       });
+
+//       hierarchyData.each((node) => {
+//         const dataNode = nodes.find((n) => n.id === node.data.id);
+//         if (dataNode) {
+//           dataNode.depth = node.depth; // Assign depth to each node
+//         }
+//       });
+
+//       // Update Links
+//       const link = linkGroup
+//         .selectAll("line")
+//         .data(links, (d) => `${d.source}-${d.target}`)
+//         .join(
+//           (enter) => enter.append("line").attr("stroke", "#999").attr("stroke-width", 2),
+//           (update) => update,
+//           (exit) => exit.remove()
+//         );
+
+//       // Update Nodes
+//       const node = nodeGroup
+//         .selectAll("g")
+//         .data(nodes, (d) => d.id)
+//         .join(
+//           (enter) => {
+//             const nodeEnter = enter
+//               .append("g")
+//               .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
+//               .on("click", (event, d) => {
+//                 // When a node is clicked, update the selected level
+//                 selectedLevel = d.depth;
+//                 console.log("Selected Level:", selectedLevel);
+
+//                 // Set the color picker to the current level's color or default
+//                 const colorPickerContainer = document.getElementById("color-picker-container");
+//                 const colorPicker = document.getElementById("color-picker");
+
+//                 colorPickerContainer.style.display = "block"; // Show color picker
+//                 colorPicker.value = colorMap[selectedLevel] || defaultColorScale(d.depth || 0); // Set to current color
+//               })
+//               .on("dblclick", (event, d) => {
+//                 // Create an input field for editing
+//                 const input = document.createElement("input");
+//                 input.type = "text";
+//                 input.value = d.text;
+//                 input.style.position = "absolute";
+//                 input.style.left = `${event.pageX}px`;
+//                 input.style.top = `${event.pageY}px`;
+//                 input.style.zIndex = 1000;
+
+//                 document.body.appendChild(input);
+
+//                 // Focus on the input field
+//                 input.focus();
+
+//                 // Handle input blur (when editing is finished)
+//                 input.addEventListener("blur", async () => {
+//                   const updatedText = input.value.trim();
+//                   if (updatedText && updatedText !== d.text) {
+//                     try {
+//                       // Update the database
+//                       await session.run("MATCH (n {name: $oldName}) SET n.name = $newName RETURN n", {
+//                         oldName: d.text,
+//                         newName: updatedText,
+//                       });
+
+//                       // Update the node data
+//                       d.text = updatedText;
+
+//                       // Update the text in the visualization directly
+//                       d3.select(event.target.parentNode).select("text").text(updatedText);
+
+//                       console.log("Node updated successfully:", updatedText);
+//                     } catch (error) {
+//                       console.error("Error updating database:", error);
+//                     }
+//                   }
+
+//                   // Remove the input field
+//                   document.body.removeChild(input);
+//                 });
+
+//                 // Prevent propagation of the double-click event
+//                 event.stopPropagation();
+//               });
+
+//             // Dynamically calculate ellipse dimensions based on text length
+//             nodeEnter
+//               .append("ellipse")
+//               .attr("rx", (d) => Math.max(30, d.text.length * 5)) // Adjust width dynamically
+//               .attr("ry", 30) // Fixed height
+//               .attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0)) // Use custom color or default
+//               .attr("stroke", "#333")
+//               .attr("stroke-width", 2);
+
+//             nodeEnter
+//               .append("text")
+//               .attr("text-anchor", "middle")
+//               .attr("alignment-baseline", "middle")
+//               .text((d) => d.text);
+
+//             return nodeEnter;
+//           },
+//           (update) => update.select("ellipse").attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0)), // Update color
+//           (exit) => exit.remove()
+//         );
+
+//       // Restart simulation
+//       simulation.nodes(nodes);
+//       simulation.force("link").links(links);
+//       simulation.alpha(1).restart();
+
+//       console.log("Nodes:", nodes);
+//       console.log("Links:", links);
+//     }
+
+//     // Add Event Listener for Color Picker
+//     document.getElementById("color-picker").addEventListener("input", (event) => {
+//       const newColor = event.target.value;
+
+//       if (selectedLevel !== null) {
+//         // Update the color map for the selected level
+//         colorMap[selectedLevel] = newColor;
+
+//         // Re-render nodes with the updated colors
+//         nodeGroup
+//           .selectAll("g")
+//           .select("ellipse")
+//           .attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0));
+//       }
+//     });
+
+//     // Add global click listener to hide the color picker
+//     document.addEventListener("click", (event) => {
+//       const colorPickerContainer = document.getElementById("color-picker-container");
+//       colorPickerContainer.style.display = "none"; // Hide color picker
+//     });
+
+//     // Prevent hiding when clicking on a node
+//     nodeGroup.on("click", (event) => {
+//       event.stopPropagation(); // Prevent the global click event from triggering
+//     });
+
+//     function ticked() {
+//       linkGroup
+//         .selectAll("line")
+//         .attr("x1", (d) => calculateEdgePosition(d.source, d.target).x1)
+//         .attr("y1", (d) => calculateEdgePosition(d.source, d.target).y1)
+//         .attr("x2", (d) => calculateEdgePosition(d.source, d.target).x2)
+//         .attr("y2", (d) => calculateEdgePosition(d.source, d.target).y2);
+
+//       nodeGroup.selectAll("g").attr("transform", (d) => `translate(${d.x},${d.y})`);
+//     }
+
+//     function calculateEdgePosition(source, target) {
+//       // Dimensions for source and target ellipses
+//       const sourceRx = Math.max(30, source.text.length * 5);
+//       const sourceRy = 30;
+//       const targetRx = Math.max(30, target.text.length * 5);
+//       const targetRy = 30;
+
+//       // Parent connects to bottom-middle
+//       const sourceX = source.x;
+//       const sourceY = source.y + sourceRy;
+
+//       // Child connects to top-middle
+//       const targetX = target.x;
+//       const targetY = target.y - targetRy;
+
+//       return {
+//         x1: sourceX,
+//         y1: sourceY,
+//         x2: targetX,
+//         y2: targetY,
+//       };
+//     }
+
+//     function dragstarted(event, d) {
+//       // Stop the simulation for all nodes to allow independent movement
+//       simulation.alpha(0).stop();
+//       d.fx = d.x;
+//       d.fy = d.y;
+//     }
+
+//     function dragged(event, d) {
+//       d.fx = event.x;
+//       d.fy = event.y;
+
+//       // Update the dragged node's position in the nodes array
+//       nodes.forEach((node) => {
+//         if (node.id === d.id) {
+//           node.x = d.fx;
+//           node.y = d.fy;
+//         }
+//       });
+
+//       // Update the dragged node's position visually
+//       nodeGroup
+//         .selectAll("g")
+//         .filter((node) => node.id === d.id)
+//         .attr("transform", `translate(${d.fx},${d.fy})`);
+
+//       // Dynamically update only the links connected to the dragged node
+//       linkGroup
+//         .selectAll("line")
+//         .filter((line) => line.source.id === d.id || line.target.id === d.id)
+//         .attr("x1", (line) => {
+//           return line.source.id === d.id ? d.fx : line.source.x;
+//         })
+//         .attr("y1", (line) => {
+//           return line.source.id === d.id ? d.fy : line.source.y;
+//         })
+//         .attr("x2", (line) => {
+//           return line.target.id === d.id ? d.fx : line.target.x;
+//         })
+//         .attr("y2", (line) => {
+//           return line.target.id === d.id ? d.fy : line.target.y;
+//         });
+//     }
+
+//     function dragended(event, d) {
+//       // Release the dragged node and allow it to stay in the final position
+//       d.fx = null;
+//       d.fy = null;
+//     }
+//   });
+// });
+
+
 document.addEventListener("DOMContentLoaded", function () {
   const generateButton = document.getElementById("generate-mindmap");
   const downloadButton = document.getElementById("download-map");
@@ -1356,10 +1813,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const addNode = document.getElementById("add-node");
   const addRelation = document.getElementById("add-relation");
 
+  let nodes = [];
+  let links = [];
+
   if (!generateButton || !modal || !downloadButton) {
     console.error("Required elements not found.");
     return;
   }
+
+  let isAddNodeListenerAttached = false;
 
   window.addEventListener("beforeunload", () => {
     session.close();
@@ -1369,6 +1831,20 @@ document.addEventListener("DOMContentLoaded", function () {
   // Close Modal
   closeModalButton.addEventListener("click", function () {
     modal.style.display = "none";
+
+    if (d3.select("#graph-visualization svg").node()) {
+      console.log("SVG before removal:", d3.select("#graph-visualization svg").node());
+    } else {
+      console.log("No SVG found before removal.");
+    }
+
+    d3.select("#graph-visualization svg").remove();
+
+    if (d3.select("#graph-visualization svg").node()) {
+      console.log("SVG after removal:", d3.select("#graph-visualization svg").node());
+    } else {
+      console.log("No SVG found after removal.");
+    }
     console.log("Modal closed.");
   });
 
@@ -1441,15 +1917,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const session = driver.session();
 
+    // Clear previous visualization (if any)
+    d3.select("#graph-visualization svg").remove();
+
     const mindmapContainer = document.getElementById("graph-visualization");
 
     if (!mindmapContainer) {
       console.error("Mindmap container not found.");
       return;
     }
-
-    // Clear previous visualization (if any)
-    d3.select("#graph-visualization svg").remove();
 
     // SVG and Canvas Setup
     const width = mindmapContainer.clientWidth || 800;
@@ -1470,9 +1946,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     svg.call(zoomBehavior);
 
-    let nodes = [];
-    let links = [];
-
     const simulation = d3
       .forceSimulation(nodes)
       .force(
@@ -1492,16 +1965,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function fetchFromDatabase() {
       try {
-        const result = await session.run("MATCH (n)-[r]->(m) RETURN n, r, m");
+        const result = await session.run("MATCH (n) OPTIONAL MATCH (n)-[r]->(m) RETURN n, r, m");
 
         // Clear previous data
-        nodes = [];
-        links = [];
+        nodes.splice(0, nodes.length);
+        links.splice(0, links.length);
 
         result.records.forEach((record) => {
           const source = record.get("n").properties;
-          const target = record.get("m").properties;
-          const relationship = record.get("r").type;
+          const target = record.get("m") ? record.get("m").properties : null; // Handle cases where `m` is null
+          const relationship = record.get("r") ? record.get("r").type : null; // Handle cases where `r` is null
 
           // Add nodes if not already in the array
           if (!nodes.some((node) => node.id === source.name)) {
@@ -1510,18 +1983,21 @@ document.addEventListener("DOMContentLoaded", function () {
               text: source.name,
             });
           }
-          if (!nodes.some((node) => node.id === target.name)) {
+          if (target && !nodes.some((node) => node.id === target.name)) {
             nodes.push({
               id: target.name,
               text: target.name,
             });
           }
 
-          links.push({
-            source: source.name,
-            target: target.name,
-            type: relationship,
-          });
+          // Add the relationship to the links array if it exists
+          if (relationship && target) {
+            links.push({
+              source: source.name,
+              target: target.name,
+              type: relationship,
+            });
+          }
         });
 
         const hierarchyData = buildHierarchy(nodes, links);
@@ -1532,22 +2008,69 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    fetchFromDatabase();
+    fetchFromDatabase()
+      .then(() => console.log("Database fetch completed"))
+      .catch((err) => console.error("Error in fetchFromDatabase:", err));
 
     function buildHierarchy(nodes, links) {
       const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+
+      // Ensure each node has a `children` property initialized
+      nodes.forEach((node) => {
+        if (!node.children) {
+          node.children = [];
+        }
+      });
+
+      // Add children to parent nodes based on links
       links.forEach((link) => {
         const parent = nodeMap.get(link.source);
         const child = nodeMap.get(link.target);
 
-        if (!parent.children) {
-          parent.children = [];
+        if (parent && child) {
+          parent.children.push(child);
         }
-        parent.children.push(child);
       });
 
-      // Assume the first node in `nodes` is the root
-      return d3.hierarchy(nodeMap.get(nodes[0].id));
+      // Identify root nodes (nodes with no incoming links)
+      const allTargets = new Set(links.map((link) => link.target));
+      const rootNodes = nodes.filter((node) => !allTargets.has(node.id));
+
+      console.log("Root Nodes:", rootNodes);
+
+      // If no explicit root exists, take the first node as root
+      if (rootNodes.length === 0) {
+        console.warn("No explicit root node found. Using the first node as the root.");
+        return d3.hierarchy(nodeMap.get(nodes[0].id));
+      }
+
+      // Handle multiple root nodes by creating a virtual root
+      if (rootNodes.length > 1) {
+        const virtualRoot = { id: "virtualRoot", text: "Root", children: rootNodes };
+        return d3.hierarchy(virtualRoot);
+      }
+
+      // Build hierarchy starting from the single root node
+      const hierarchy = d3.hierarchy(nodeMap.get(rootNodes[0].id));
+
+      // Assign depths to nodes in the hierarchy
+      hierarchy.each((node) => {
+        const dataNode = nodeMap.get(node.data.id);
+        if (dataNode) {
+          dataNode.depth = node.depth;
+        }
+      });
+
+      // Handle standalone nodes (nodes without any links)
+      const connectedNodes = new Set(links.flatMap((link) => [link.source, link.target]));
+      const standaloneNodes = nodes.filter((node) => !connectedNodes.has(node.id));
+
+      standaloneNodes.forEach((node) => {
+        node.depth = 0; // Explicitly assign standalone nodes depth 0
+        console.log(`Standalone Node Assigned Depth 0: ${node.id}`);
+      });
+
+      return hierarchy;
     }
 
     function applyTreeLayout(hierarchyData) {
@@ -1570,20 +2093,39 @@ document.addEventListener("DOMContentLoaded", function () {
     function update() {
       console.log("Updating visualization...");
 
-      // Calculate the depth of each node
-      const hierarchyData = d3.hierarchy({
-        children: nodes.map((node) => ({
-          ...node,
-          children: links.filter((link) => link.source === node.id).map((link) => nodes.find((childNode) => childNode.id === link.target)),
-        })),
-      });
+      // Preserve existing positions and colors
+      const nodePositionMap = new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }]));
+      const nodeColorMap = new Map(nodes.map((node) => [node.id, colorMap[node.depth]]));
 
+      // Build hierarchy for nodes with links
+      const hierarchyData = buildHierarchy(nodes, links);
+
+      // Update depths for all nodes in the hierarchy
       hierarchyData.each((node) => {
         const dataNode = nodes.find((n) => n.id === node.data.id);
         if (dataNode) {
-          dataNode.depth = node.depth; // Assign depth to each node
+          dataNode.depth = node.depth;
+
+          // Assign color for the depth if not already in the colorMap
+          if (!colorMap[node.depth]) {
+            colorMap[node.depth] = defaultColorScale(node.depth);
+          }
         }
       });
+
+      // Ensure standalone nodes retain depth 0
+      nodes.forEach((node) => {
+        if (node.depth === undefined) {
+          node.depth = 0; // Default depth for standalone nodes
+        }
+
+        // Assign color for each depth if not already assigned
+        if (!colorMap[node.depth]) {
+          colorMap[node.depth] = defaultColorScale(node.depth);
+        }
+      });
+
+      console.log("Color Map:", colorMap);
 
       // Update Links
       const link = linkGroup
@@ -1605,11 +2147,9 @@ document.addEventListener("DOMContentLoaded", function () {
               .append("g")
               .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
               .on("click", (event, d) => {
-                // When a node is clicked, update the selected level
                 selectedLevel = d.depth;
                 console.log("Selected Level:", selectedLevel);
 
-                // Set the color picker to the current level's color or default
                 const colorPickerContainer = document.getElementById("color-picker-container");
                 const colorPicker = document.getElementById("color-picker");
 
@@ -1617,7 +2157,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 colorPicker.value = colorMap[selectedLevel] || defaultColorScale(d.depth || 0); // Set to current color
               })
               .on("dblclick", (event, d) => {
-                // Create an input field for editing
                 const input = document.createElement("input");
                 input.type = "text";
                 input.value = d.text;
@@ -1627,47 +2166,35 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.style.zIndex = 1000;
 
                 document.body.appendChild(input);
-
-                // Focus on the input field
                 input.focus();
 
-                // Handle input blur (when editing is finished)
                 input.addEventListener("blur", async () => {
                   const updatedText = input.value.trim();
                   if (updatedText && updatedText !== d.text) {
                     try {
-                      // Update the database
                       await session.run("MATCH (n {name: $oldName}) SET n.name = $newName RETURN n", {
                         oldName: d.text,
                         newName: updatedText,
                       });
 
-                      // Update the node data
                       d.text = updatedText;
-
-                      // Update the text in the visualization directly
                       d3.select(event.target.parentNode).select("text").text(updatedText);
-
                       console.log("Node updated successfully:", updatedText);
                     } catch (error) {
                       console.error("Error updating database:", error);
                     }
                   }
-
-                  // Remove the input field
                   document.body.removeChild(input);
                 });
 
-                // Prevent propagation of the double-click event
                 event.stopPropagation();
               });
 
-            // Dynamically calculate ellipse dimensions based on text length
             nodeEnter
               .append("ellipse")
-              .attr("rx", (d) => Math.max(30, d.text.length * 5)) // Adjust width dynamically
-              .attr("ry", 30) // Fixed height
-              .attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0)) // Use custom color or default
+              .attr("rx", (d) => Math.max(30, d.text.length * 5))
+              .attr("ry", 30)
+              .attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0))
               .attr("stroke", "#333")
               .attr("stroke-width", 2);
 
@@ -1679,11 +2206,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
             return nodeEnter;
           },
-          (update) => update.select("ellipse").attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0)), // Update color
+          (update) =>
+            update
+              .attr("transform", (d) => {
+                const position = nodePositionMap.get(d.id);
+                if (position) {
+                  d.fx = position.x;
+                  d.fy = position.y;
+                  return `translate(${position.x},${position.y})`;
+                }
+                return `translate(${d.x},${d.y})`;
+              })
+              .select("ellipse")
+              .attr("fill", (d) => nodeColorMap.get(d.id) || colorMap[d.depth] || defaultColorScale(d.depth || 0)), // Use preserved color
           (exit) => exit.remove()
         );
 
-      // Restart simulation
+      // Restart simulation for only new nodes
       simulation.nodes(nodes);
       simulation.force("link").links(links);
       simulation.alpha(1).restart();
@@ -1801,492 +2340,79 @@ document.addEventListener("DOMContentLoaded", function () {
       d.fx = null;
       d.fy = null;
     }
+
+    // Add event listener for "Add Node" button
+    // Prevent re-attaching event listener
+    if (!isAddNodeListenerAttached) {
+      addNode.addEventListener("click", async function handleAddNodeClick() {
+        const newNodeName = document.getElementById("new-node-name").value.trim();
+
+        if (!newNodeName) {
+          console.error("Node name cannot be empty.");
+          alert("Please enter a valid node name.");
+          return;
+        }
+
+        // Disable the button to prevent multiple submissions
+        addNode.disabled = true;
+
+        // Check if the node already exists
+        console.log("Current nodes array:", nodes); // Log the nodes array for debugging
+        if (nodes.some((node) => node.id === newNodeName)) {
+          console.error("Node with this name already exists.");
+          alert("A node with this name already exists. Please use a different name.");
+          addNode.disabled = false; // Re-enable the button
+          return;
+        }
+
+        try {
+          // Add new node to the database
+          await session.run("CREATE (n:Node {name: $name}) RETURN n", {
+            name: newNodeName,
+          });
+
+          console.log(`Node '${newNodeName}' added to the database.`);
+
+          // Add the new node to the visualization
+          const newNode = {
+            id: newNodeName,
+            text: newNodeName,
+            // Set proper position based on existing nodes
+            x:
+              nodes.length > 0
+                ? d3.mean(nodes, (node) => node.x) || 400 // Average x-position of existing nodes or default to 400
+                : 400, // Default position if no nodes exist
+            y:
+              nodes.length > 0
+                ? d3.mean(nodes, (node) => node.y) || 300 // Average y-position of existing nodes or default to 300
+                : 300, // Default position if no nodes exist
+            depth: null, // Initialize depth as null until hierarchy is recalculated
+          };
+
+          // Add validation logging
+          if (newNode && newNode.id && newNode.x !== undefined && newNode.y !== undefined) {
+            console.log(`New node created:`, newNode);
+          } else {
+            console.error("Failed to create a valid new node:", newNode);
+          }
+          
+          nodes.push(newNode);
+
+          update();
+          console.log(`Node '${newNodeName}' added to the visualization.`);
+        } catch (error) {
+          console.error("Error adding node to the database:", error);
+          alert("Failed to add the new node. Please try again.");
+        } finally {
+          // Re-enable the button regardless of the operation's success or failure
+          addNode.disabled = false;
+        }
+
+        // Clear the input field
+        document.getElementById("new-node-name").value = "";
+      });
+
+      isAddNodeListenerAttached = true; // Mark the listener as attached
+    }
   });
-
-  // Initialize when Generate Button is Clicked
-  // generateButton.addEventListener("click", function () {
-  //   modal.style.display = "flex";
-  //   console.log("Mind map generation started.");
-
-  //   const neo4j = require("neo4j-driver");
-
-  //   // Initialize Neo4j Driver
-  //   const driver = neo4j.driver("neo4j+s://7b2adf95.databases.neo4j.io", neo4j.auth.basic("neo4j", "INGaFxLI5FZnILVRQY6sG1ZOxtwzexRAXoCI2aeZ3UM"));
-
-  //   const session = driver.session();
-
-  //   const mindmapContainer = document.getElementById("graph-visualization");
-
-  //   if (!mindmapContainer) {
-  //     console.error("Mindmap container not found.");
-  //     return;
-  //   }
-
-  //   // Clear previous visualization (if any)
-  //   d3.select("#graph-visualization svg").remove();
-
-  //   // SVG and Canvas Setup
-  //   const width = mindmapContainer.clientWidth || 800;
-  //   const height = mindmapContainer.clientHeight || 600;
-
-  //   const svg = d3.select("#graph-visualization").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet").style("cursor", "pointer");
-
-  //   const zoomGroup = svg.append("g"); // Group for zooming and panning
-  //   const linkGroup = zoomGroup.append("g").attr("class", "links");
-  //   const nodeGroup = zoomGroup.append("g").attr("class", "nodes");
-
-  //   const zoomBehavior = d3
-  //     .zoom()
-  //     .scaleExtent([0.5, 5]) // Zoom range
-  //     .on("zoom", (event) => {
-  //       zoomGroup.attr("transform", event.transform);
-  //     });
-
-  //   svg.call(zoomBehavior);
-
-  //   let nodes = [];
-  //   let links = [];
-
-  //   const simulation = d3
-  //     .forceSimulation(nodes)
-  //     .force(
-  //       "link",
-  //       d3
-  //         .forceLink(links)
-  //         .id((d) => d.id)
-  //         .distance(150)
-  //     ) // Increase link distance
-  //     .force("charge", d3.forceManyBody().strength(-300)) // Adjust charge to space nodes apart
-  //     .force(
-  //       "collide",
-  //       d3.forceCollide().radius((d) => Math.max(30, d.text.length * 5) + 10)
-  //     ) // Avoid overlap
-  //     .force("center", d3.forceCenter(width / 2, height / 2))
-  //     .on("tick", ticked);
-
-  //   async function fetchFromDatabase() {
-  //     try {
-  //       const result = await session.run("MATCH (n)-[r]->(m) RETURN n, r, m");
-
-  //       // Clear previous data
-  //       nodes = [];
-  //       links = [];
-
-  //       result.records.forEach((record) => {
-  //         const source = record.get("n").properties;
-  //         const target = record.get("m").properties;
-  //         const relationship = record.get("r").type;
-
-  //         // Add nodes if not already in the array
-  //         if (!nodes.some((node) => node.id === source.name)) {
-  //           nodes.push({
-  //             id: source.name,
-  //             text: source.name,
-  //           });
-  //         }
-  //         if (!nodes.some((node) => node.id === target.name)) {
-  //           nodes.push({
-  //             id: target.name,
-  //             text: target.name,
-  //           });
-  //         }
-
-  //         links.push({
-  //           source: source.name,
-  //           target: target.name,
-  //           type: relationship,
-  //         });
-  //       });
-
-  //       const hierarchyData = buildHierarchy(nodes, links);
-  //       applyTreeLayout(hierarchyData);
-  //       update(); // Update visualization
-  //     } catch (error) {
-  //       console.error("Error fetching data from Neo4j:", error);
-  //     }
-  //   }
-
-  //   fetchFromDatabase();
-
-  //   // function buildHierarchy(nodes, links) {
-  //   //   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
-  //   //   links.forEach((link) => {
-  //   //     const parent = nodeMap.get(link.source);
-  //   //     const child = nodeMap.get(link.target);
-
-  //   //     if (!parent.children) {
-  //   //       parent.children = [];
-  //   //     }
-  //   //     parent.children.push(child);
-  //   //   });
-
-  //   //   // Assume the first node in `nodes` is the root
-  //   //   return d3.hierarchy(nodeMap.get(nodes[0].id));
-  //   // }
-
-  //   function buildHierarchy(nodes, links) {
-  //     const nodeMap = new Map(nodes.map((node) => [node.id, node]));
-
-  //     // Ensure each node has a `children` property initialized
-  //     nodes.forEach((node) => {
-  //       if (!node.children) {
-  //         node.children = [];
-  //       }
-  //     });
-
-  //     // Add children to each parent node based on links
-  //     links.forEach((link) => {
-  //       const parent = nodeMap.get(link.source);
-  //       const child = nodeMap.get(link.target);
-
-  //       if (parent && child) {
-  //         parent.children.push(child);
-  //       }
-  //     });
-
-  //     // Identify root nodes (nodes with no incoming links)
-  //     const allTargets = new Set(links.map((link) => link.target));
-  //     const rootNodes = nodes.filter((node) => !allTargets.has(node.id));
-
-  //     console.log("Root Nodes:", rootNodes);
-
-  //     // Handle standalone nodes (nodes without links)
-  //     const standaloneNodes = nodes.filter((node) => !links.some((link) => link.source === node.id || link.target === node.id));
-
-  //     standaloneNodes.forEach((node) => {
-  //       node.depth = 0; // Assign standalone nodes depth 0
-  //       console.log(`Standalone Node Assigned Depth 0: ${node.id}`);
-  //     });
-
-  //     // If no explicit root exists, take the first node as root
-  //     if (rootNodes.length === 0) {
-  //       console.warn("No explicit root node found. Using the first node as the root.");
-  //       return d3.hierarchy(nodeMap.get(nodes[0].id));
-  //     }
-
-  //     // Handle multiple root nodes by creating a virtual root
-  //     if (rootNodes.length > 1) {
-  //       const virtualRoot = { id: "virtualRoot", text: "Root", children: rootNodes };
-  //       return d3.hierarchy(virtualRoot);
-  //     }
-
-  //     // If only one root node exists, return its hierarchy
-  //     return d3.hierarchy(nodeMap.get(rootNodes[0].id));
-  //   }
-
-  //   function applyTreeLayout(hierarchyData) {
-  //     const treeLayout = d3.tree().size([width, height - 100]);
-  //     const treeData = treeLayout(hierarchyData);
-
-  //     treeData.descendants().forEach((d) => {
-  //       const node = nodes.find((n) => n.id === d.data.id);
-  //       if (node) {
-  //         node.x = d.x;
-  //         node.y = d.y;
-  //       }
-  //     });
-  //   }
-
-  //   let selectedLevel = null; // To store the currently selected level
-  //   const colorMap = {}; // To store custom colors for each level
-  //   const defaultColorScale = d3.scaleOrdinal(d3.schemeCategory10); // Define color scale at a global level
-
-  //   function update() {
-  //     console.log("Updating visualization...");
-
-  //     // Calculate the depth of each node
-  //     const hierarchyData = buildHierarchy(nodes, links);
-
-  //     hierarchyData.each((node) => {
-  //       const dataNode = nodes.find((n) => n.id === node.data.id);
-  //       if (dataNode) {
-  //         dataNode.depth = node.depth ?? 0; // Assign default depth 0 if standalone
-  //         if (!colorMap[dataNode.depth]) {
-  //           colorMap[dataNode.depth] = defaultColorScale(dataNode.depth); // Assign color for depth
-  //         }
-  //         console.log(`Node ${dataNode.id} assigned depth ${dataNode.depth} and color ${colorMap[dataNode.depth]}`);
-  //       }
-  //     });
-
-  //     // Handle standalone nodes that may not be included in the hierarchy
-  //     nodes.forEach((node) => {
-  //       if (node.depth === undefined) {
-  //         node.depth = 0; // Default depth for standalone nodes
-  //         if (!colorMap[0]) {
-  //           colorMap[0] = defaultColorScale(0); // Assign color for depth 0
-  //         }
-  //         console.log(`Standalone Node ${node.id} assigned depth 0 and color ${colorMap[0]}`);
-  //       }
-  //     });
-
-  //     console.log("Color Map:", colorMap);
-
-  //     // Update Links
-  //     const link = linkGroup
-  //       .selectAll("line")
-  //       .data(links, (d) => `${d.source}-${d.target}`)
-  //       .join(
-  //         (enter) => enter.append("line").attr("stroke", "#999").attr("stroke-width", 2),
-  //         (update) => update,
-  //         (exit) => exit.remove()
-  //       );
-
-  //     // Update Nodes
-  //     const node = nodeGroup
-  //       .selectAll("g")
-  //       .data(nodes, (d) => d.id)
-  //       .join(
-  //         (enter) => {
-  //           const nodeEnter = enter
-  //             .append("g")
-  //             .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
-  //             .on("click", (event, d) => {
-  //               // When a node is clicked, update the selected level
-  //               selectedLevel = d.depth;
-  //               console.log("Selected Level:", selectedLevel);
-
-  //               // Set the color picker to the current level's color or default
-  //               const colorPickerContainer = document.getElementById("color-picker-container");
-  //               const colorPicker = document.getElementById("color-picker");
-
-  //               colorPickerContainer.style.display = "block"; // Show color picker
-  //               colorPicker.value = colorMap[selectedLevel] || defaultColorScale(d.depth || 0); // Set to current color
-  //             })
-  //             .on("dblclick", (event, d) => {
-  //               // Create an input field for editing
-  //               const input = document.createElement("input");
-  //               input.type = "text";
-  //               input.value = d.text;
-  //               input.style.position = "absolute";
-  //               input.style.left = `${event.pageX}px`;
-  //               input.style.top = `${event.pageY}px`;
-  //               input.style.zIndex = 1000;
-
-  //               document.body.appendChild(input);
-
-  //               // Focus on the input field
-  //               input.focus();
-
-  //               // Handle input blur (when editing is finished)
-  //               input.addEventListener("blur", async () => {
-  //                 const updatedText = input.value.trim();
-  //                 if (updatedText && updatedText !== d.text) {
-  //                   try {
-  //                     // Update the database
-  //                     await session.run("MATCH (n {name: $oldName}) SET n.name = $newName RETURN n", {
-  //                       oldName: d.text,
-  //                       newName: updatedText,
-  //                     });
-
-  //                     // Update the node data
-  //                     d.text = updatedText;
-
-  //                     // Update the text in the visualization directly
-  //                     d3.select(event.target.parentNode).select("text").text(updatedText);
-
-  //                     console.log("Node updated successfully:", updatedText);
-  //                   } catch (error) {
-  //                     console.error("Error updating database:", error);
-  //                   }
-  //                 }
-
-  //                 // Remove the input field
-  //                 document.body.removeChild(input);
-  //               });
-
-  //               // Prevent propagation of the double-click event
-  //               event.stopPropagation();
-  //             });
-
-  //           // Dynamically calculate ellipse dimensions based on text length
-  //           nodeEnter
-  //             .append("ellipse")
-  //             .attr("rx", (d) => Math.max(30, d.text.length * 5)) // Adjust width dynamically
-  //             .attr("ry", 30) // Fixed height
-  //             .attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0)) // Use custom color or default
-  //             .attr("stroke", "#333")
-  //             .attr("stroke-width", 2);
-
-  //           nodeEnter
-  //             .append("text")
-  //             .attr("text-anchor", "middle")
-  //             .attr("alignment-baseline", "middle")
-  //             .text((d) => d.text);
-
-  //           return nodeEnter;
-  //         },
-  //         (update) => update.select("ellipse").attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0)), // Update color
-  //         (exit) => exit.remove()
-  //       );
-
-  //     // Restart simulation
-  //     simulation.nodes(nodes);
-  //     simulation.force("link").links(links);
-  //     simulation.alpha(1).restart();
-
-  //     console.log("Nodes:", nodes);
-  //     console.log("Links:", links);
-  //   }
-
-  //   // Add Event Listener for Color Picker
-  //   document.getElementById("color-picker").addEventListener("input", (event) => {
-  //     const newColor = event.target.value;
-
-  //     if (selectedLevel !== null) {
-  //       // Update the color map for the selected level
-  //       colorMap[selectedLevel] = newColor;
-
-  //       // Re-render nodes with the updated colors
-  //       nodeGroup
-  //         .selectAll("g")
-  //         .select("ellipse")
-  //         .attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0));
-  //     }
-  //   });
-
-  //   // Add global click listener to hide the color picker
-  //   document.addEventListener("click", (event) => {
-  //     const colorPickerContainer = document.getElementById("color-picker-container");
-  //     colorPickerContainer.style.display = "none"; // Hide color picker
-  //   });
-
-  //   // Prevent hiding when clicking on a node
-  //   nodeGroup.on("click", (event) => {
-  //     event.stopPropagation(); // Prevent the global click event from triggering
-  //   });
-
-  //   function ticked() {
-  //     linkGroup
-  //       .selectAll("line")
-  //       .attr("x1", (d) => calculateEdgePosition(d.source, d.target).x1)
-  //       .attr("y1", (d) => calculateEdgePosition(d.source, d.target).y1)
-  //       .attr("x2", (d) => calculateEdgePosition(d.source, d.target).x2)
-  //       .attr("y2", (d) => calculateEdgePosition(d.source, d.target).y2);
-
-  //     nodeGroup.selectAll("g").attr("transform", (d) => `translate(${d.x},${d.y})`);
-  //   }
-
-  //   function calculateEdgePosition(source, target) {
-  //     // Dimensions for source and target ellipses
-  //     const sourceRx = Math.max(30, source.text.length * 5);
-  //     const sourceRy = 30;
-  //     const targetRx = Math.max(30, target.text.length * 5);
-  //     const targetRy = 30;
-
-  //     // Parent connects to bottom-middle
-  //     const sourceX = source.x;
-  //     const sourceY = source.y + sourceRy;
-
-  //     // Child connects to top-middle
-  //     const targetX = target.x;
-  //     const targetY = target.y - targetRy;
-
-  //     return {
-  //       x1: sourceX,
-  //       y1: sourceY,
-  //       x2: targetX,
-  //       y2: targetY,
-  //     };
-  //   }
-
-  //   function dragstarted(event, d) {
-  //     // Stop the simulation for all nodes to allow independent movement
-  //     simulation.alpha(0).stop();
-  //     d.fx = d.x;
-  //     d.fy = d.y;
-  //   }
-
-  //   function dragged(event, d) {
-  //     d.fx = event.x;
-  //     d.fy = event.y;
-
-  //     // Update the dragged node's position in the nodes array
-  //     nodes.forEach((node) => {
-  //       if (node.id === d.id) {
-  //         node.x = d.fx;
-  //         node.y = d.fy;
-  //       }
-  //     });
-
-  //     // Update the dragged node's position visually
-  //     nodeGroup
-  //       .selectAll("g")
-  //       .filter((node) => node.id === d.id)
-  //       .attr("transform", `translate(${d.fx},${d.fy})`);
-
-  //     // Dynamically update only the links connected to the dragged node
-  //     linkGroup
-  //       .selectAll("line")
-  //       .filter((line) => line.source.id === d.id || line.target.id === d.id)
-  //       .attr("x1", (line) => {
-  //         return line.source.id === d.id ? d.fx : line.source.x;
-  //       })
-  //       .attr("y1", (line) => {
-  //         return line.source.id === d.id ? d.fy : line.source.y;
-  //       })
-  //       .attr("x2", (line) => {
-  //         return line.target.id === d.id ? d.fx : line.target.x;
-  //       })
-  //       .attr("y2", (line) => {
-  //         return line.target.id === d.id ? d.fy : line.target.y;
-  //       });
-  //   }
-
-  //   function dragended(event, d) {
-  //     // Release the dragged node and allow it to stay in the final position
-  //     d.fx = null;
-  //     d.fy = null;
-  //   }
-
-  //   // Add event listener for "Add Node" button
-  //   document.getElementById("add-node").addEventListener("click", async () => {
-  //     const newNodeName = document.getElementById("new-node-name").value.trim();
-
-  //     if (!newNodeName) {
-  //       console.error("Node name cannot be empty.");
-  //       alert("Please enter a valid node name.");
-  //       return;
-  //     }
-
-  //     // Check if the node already exists
-  //     if (nodes.some((node) => node.id === newNodeName)) {
-  //       console.error("Node with this name already exists.");
-  //       alert("A node with this name already exists. Please use a different name.");
-  //       return;
-  //     }
-
-  //     try {
-  //       // Add new node to the database
-  //       await session.run("CREATE (n:Node {name: $name}) RETURN n", {
-  //         name: newNodeName,
-  //       });
-
-  //       console.log(`Node '${newNodeName}' added to the database.`);
-
-  //       // Add the new node to the visualization
-  //       const newNode = {
-  //         id: newNodeName,
-  //         text: newNodeName,
-  //         x: Math.random() * 800, // Random position
-  //         y: Math.random() * 600,
-  //         depth: null, // Initialize depth as null until hierarchy is recalculated
-  //       };
-  //       nodes.push(newNode);
-
-  //       // Recalculate the hierarchy and update colors
-  //       const hierarchyData = buildHierarchy(nodes, links);
-  //       applyTreeLayout(hierarchyData);
-  //       update(); // Update the visualization with the new node
-  //       console.log(`Node '${newNodeName}' added to the visualization.`);
-  //     } catch (error) {
-  //       console.error("Error adding node to the database:", error);
-  //       alert("Failed to add the new node. Please try again.");
-  //     }
-
-  //     // Clear the input field
-  //     document.getElementById("new-node-name").value = "";
-  //   });
-  // });
-
-
 });
