@@ -2092,41 +2092,49 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function update() {
       console.log("Updating visualization...");
-
-      // Preserve existing positions and colors
+    
+      // Ensure nodeColorMap persists across updates
+      if (!window.nodeColorMap) {
+        window.nodeColorMap = new Map(); // Initialize persistent nodeColorMap
+      }
+    
+      // Preserve existing positions
       const nodePositionMap = new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }]));
-      const nodeColorMap = new Map(nodes.map((node) => [node.id, colorMap[node.depth]]));
-
+    
       // Build hierarchy for nodes with links
       const hierarchyData = buildHierarchy(nodes, links);
-
+    
       // Update depths for all nodes in the hierarchy
       hierarchyData.each((node) => {
         const dataNode = nodes.find((n) => n.id === node.data.id);
         if (dataNode) {
           dataNode.depth = node.depth;
-
+    
           // Assign color for the depth if not already in the colorMap
           if (!colorMap[node.depth]) {
             colorMap[node.depth] = defaultColorScale(node.depth);
           }
         }
       });
-
-      // Ensure standalone nodes retain depth 0
+    
+      // Assign depth 0 color to standalone nodes and ensure color persistence
+      const rootColor = colorMap[0] || defaultColorScale(0);
       nodes.forEach((node) => {
-        if (node.depth === undefined) {
-          node.depth = 0; // Default depth for standalone nodes
+        const isStandalone = !links.some((link) => link.source === node.id || link.target === node.id);
+    
+        if (isStandalone && node.depth === undefined) {
+          node.depth = 0; // Assign root depth if undefined
         }
-
-        // Assign color for each depth if not already assigned
-        if (!colorMap[node.depth]) {
-          colorMap[node.depth] = defaultColorScale(node.depth);
+    
+        // Assign color only if not already present in the persistent map
+        if (!window.nodeColorMap.has(node.id)) {
+          const color = isStandalone ? rootColor : colorMap[node.depth] || defaultColorScale(node.depth);
+          window.nodeColorMap.set(node.id, color);
         }
       });
-
+    
       console.log("Color Map:", colorMap);
-
+    
       // Update Links
       const link = linkGroup
         .selectAll("line")
@@ -2136,7 +2144,7 @@ document.addEventListener("DOMContentLoaded", function () {
           (update) => update,
           (exit) => exit.remove()
         );
-
+    
       // Update Nodes
       const node = nodeGroup
         .selectAll("g")
@@ -2149,10 +2157,10 @@ document.addEventListener("DOMContentLoaded", function () {
               .on("click", (event, d) => {
                 selectedLevel = d.depth;
                 console.log("Selected Level:", selectedLevel);
-
+    
                 const colorPickerContainer = document.getElementById("color-picker-container");
                 const colorPicker = document.getElementById("color-picker");
-
+    
                 colorPickerContainer.style.display = "block"; // Show color picker
                 colorPicker.value = colorMap[selectedLevel] || defaultColorScale(d.depth || 0); // Set to current color
               })
@@ -2164,10 +2172,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.style.left = `${event.pageX}px`;
                 input.style.top = `${event.pageY}px`;
                 input.style.zIndex = 1000;
-
+    
                 document.body.appendChild(input);
                 input.focus();
-
+    
                 input.addEventListener("blur", async () => {
                   const updatedText = input.value.trim();
                   if (updatedText && updatedText !== d.text) {
@@ -2176,7 +2184,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         oldName: d.text,
                         newName: updatedText,
                       });
-
+    
                       d.text = updatedText;
                       d3.select(event.target.parentNode).select("text").text(updatedText);
                       console.log("Node updated successfully:", updatedText);
@@ -2186,24 +2194,24 @@ document.addEventListener("DOMContentLoaded", function () {
                   }
                   document.body.removeChild(input);
                 });
-
+    
                 event.stopPropagation();
               });
-
+    
             nodeEnter
               .append("ellipse")
               .attr("rx", (d) => Math.max(30, d.text.length * 5))
               .attr("ry", 30)
-              .attr("fill", (d) => colorMap[d.depth] || defaultColorScale(d.depth || 0))
+              .attr("fill", (d) => window.nodeColorMap.get(d.id)) // Use persistent color map
               .attr("stroke", "#333")
               .attr("stroke-width", 2);
-
+    
             nodeEnter
               .append("text")
               .attr("text-anchor", "middle")
               .attr("alignment-baseline", "middle")
               .text((d) => d.text);
-
+    
             return nodeEnter;
           },
           (update) =>
@@ -2218,18 +2226,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 return `translate(${d.x},${d.y})`;
               })
               .select("ellipse")
-              .attr("fill", (d) => nodeColorMap.get(d.id) || colorMap[d.depth] || defaultColorScale(d.depth || 0)), // Use preserved color
+              .attr("fill", (d) => window.nodeColorMap.get(d.id)), // Use persistent color map
           (exit) => exit.remove()
         );
-
+    
       // Restart simulation for only new nodes
       simulation.nodes(nodes);
       simulation.force("link").links(links);
       simulation.alpha(1).restart();
-
+    
       console.log("Nodes:", nodes);
       console.log("Links:", links);
     }
+    
 
     // Add Event Listener for Color Picker
     document.getElementById("color-picker").addEventListener("input", (event) => {
