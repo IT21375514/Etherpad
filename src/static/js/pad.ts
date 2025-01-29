@@ -1958,7 +1958,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Initialize when Generate Button is Clicked
   generateButton.addEventListener("click", function () {
-
     if (typeof padeditor !== "undefined" && padeditor.ace) {
       console.log("Calling Ace editor API...");
       padeditor.ace.callWithAce(
@@ -2136,16 +2135,22 @@ document.addEventListener("DOMContentLoaded", function () {
       // Handle multiple root nodes by creating a virtual root
       if (rootNodes.length > 1) {
         const virtualRoot = { id: "virtualRoot", text: "Root", children: rootNodes };
-        return d3.hierarchy(virtualRoot);
-      }
+        const h = d3.hierarchy(virtualRoot);
+      
+        // ✅ Minimal one-line fix: shift every descendant's depth down by 1
+        h.each(n => { n.depth = Math.max(0, n.depth - 1); });
+      
+        return h;
+      }      
 
       // Build hierarchy starting from the single root node
       const hierarchy = d3.hierarchy(nodeMap.get(rootNodes[0].id));
 
       // Assign depths to nodes in the hierarchy
+      // Minimal fix: only assign depth if it's null (not set)
       hierarchy.each((node) => {
         const dataNode = nodeMap.get(node.data.id);
-        if (dataNode) {
+        if (dataNode && dataNode.depth == null) {
           dataNode.depth = node.depth;
         }
       });
@@ -2155,8 +2160,12 @@ document.addEventListener("DOMContentLoaded", function () {
       const standaloneNodes = nodes.filter((node) => !connectedNodes.has(node.id));
 
       standaloneNodes.forEach((node) => {
-        node.depth = 0; // Explicitly assign standalone nodes depth 0
-        console.log(`Standalone Node Assigned Depth 0: ${node.id}`);
+        // Only set depth to 0 if it's null/undefined,
+        // i.e. hasn't been assigned by the hierarchy
+        if (node.depth == null) {
+          node.depth = 0;
+          console.log(`Standalone Node Assigned Depth 0: ${node.id}`);
+        }
       });
 
       return hierarchy;
@@ -2193,13 +2202,11 @@ document.addEventListener("DOMContentLoaded", function () {
       // Build hierarchy for nodes with links
       const hierarchyData = buildHierarchy(nodes, links);
 
-      // Update depths for all nodes in the hierarchy
+      // Minimal fix: only assign depth if it's null
       hierarchyData.each((node) => {
         const dataNode = nodes.find((n) => n.id === node.data.id);
-        if (dataNode) {
+        if (dataNode && dataNode.depth == null) {
           dataNode.depth = node.depth;
-
-          // Assign color for the depth if not already in the colorMap
           if (!colorMap[node.depth]) {
             colorMap[node.depth] = defaultColorScale(node.depth);
           }
@@ -2222,7 +2229,37 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
 
-      console.log("Color Map:", colorMap);
+      // ✅ Ensure newly linked nodes update their colors correctly
+      nodes.forEach((node) => {
+        const hasLinks = links.some((link) => link.source === node.id || link.target === node.id);
+        if (hasLinks) {
+          if (node.depth === undefined || node.depth === 0) {
+            node.depth = hierarchyData.find((h) => h.data.id === node.id)?.depth || 0;
+          }
+        }
+
+        // ✅ Assign correct color based on new depth
+        const newColor = colorMap[node.depth] || defaultColorScale(node.depth);
+        window.nodeColorMap.set(node.id, newColor);
+
+        // After we assign new depths and colors to linked nodes...
+        nodes.forEach((node) => {
+          const isStandalone = !links.some((link) => link.source === node.id || link.target === node.id);
+          // Force standalone to remain depth 0
+          if (isStandalone && node.depth == null) {
+            node.depth = 0;
+            // Also reassign its color based on depth 0
+            const color = colorMap[0] || defaultColorScale(0);
+            window.nodeColorMap.set(node.id, color);
+          }
+        });
+      });
+
+      console.log(
+        "Updated Node Depths:",
+        nodes.map((n) => ({ id: n.id, depth: n.depth }))
+      );
+      console.log("Updated Color Map:", colorMap);
 
       // Update Links
       const link = linkGroup
@@ -2511,5 +2548,48 @@ document.addEventListener("DOMContentLoaded", function () {
 
       isAddNodeListenerAttached = true; // Mark the listener as attached
     }
+
+    addRelation.addEventListener("click", async function () {
+      const sourceName = document.getElementById("add-relation-source").value.trim();
+      const targetName = document.getElementById("add-relation-target").value.trim();
+
+      if (!sourceName || !targetName) {
+        alert("Please enter both source and target node names.");
+        return;
+      }
+
+      if (sourceName === targetName) {
+        alert("Source and target nodes cannot be the same.");
+        return;
+      }
+
+      // Check if both nodes exist
+      const sourceNode = nodes.find((node) => node.id === sourceName);
+      const targetNode = nodes.find((node) => node.id === targetName);
+
+      if (!sourceNode || !targetNode) {
+        alert("One or both nodes do not exist. Please enter valid node names.");
+        return;
+      }
+
+      try {
+        // Add relationship in Neo4j
+        await session.run("MATCH (a {name: $source}), (b {name: $target}) MERGE (a)-[:HAS_SUBNODE]->(b)", { source: sourceName, target: targetName });
+
+        console.log(`✅ Relation added: ${sourceName} → ${targetName}`);
+
+        // Add relationship to visualization
+        links.push({ source: sourceName, target: targetName, type: "HAS_SUBNODE" });
+
+        update(); // Refresh visualization
+
+        // Clear input fields
+        document.getElementById("add-relation-source").value = "";
+        document.getElementById("add-relation-target").value = "";
+      } catch (error) {
+        console.error("❌ Error adding relation:", error);
+        alert("Failed to add the relation. Check console for details.");
+      }
+    });
   });
 });

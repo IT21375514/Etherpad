@@ -449,13 +449,15 @@
         <!-- Buttons for customization -->
         <div style="margin-bottom: 10px">
           <div style="margin-top: 20px">
-            <input type="text" id="new-node-name" placeholder="Enter new node name" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 70%" />
-            <button id="add-node" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer">Add Node</button>
+            <input type="text" id="new-node-name" placeholder="Enter new node name" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 50%" />
+            <button id="add-node" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Add Node</button>
+            <button id="download-map" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Download</button>
           </div>
-          <button id="add-relation" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer">Add Relation</button>
-          <button id="clear-map" style="padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer">Clear Map</button>
-          <button id="reset-map" style="padding: 10px 20px; background-color: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer">Reset</button>
-          <button id="download-map" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer">Download</button>
+          <div style="margin-top: 20px">
+            <input type="text" id="add-relation-source" placeholder="Enter new relation source" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 35%" />
+            <input type="text" id="add-relation-target" placeholder="Enter new relation target" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 35%" />
+            <button id="add-relation" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Add Relation</button>
+          </div>
           <div id="color-picker-container" style="display: none; margin-top: 10px">
             <label for="color-picker">Change Level Color:</label>
             <input type="color" id="color-picker" value="#FFFFFF" />
