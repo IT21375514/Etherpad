@@ -1804,7 +1804,6 @@ exports.init = init;
 //   });
 // });
 
-
 document.addEventListener("DOMContentLoaded", function () {
   const generateButton = document.getElementById("generate-mindmap");
   const downloadButton = document.getElementById("download-map");
@@ -1822,6 +1821,58 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   let isAddNodeListenerAttached = false;
+  // Get all content from pad
+  // if (generateButton) {
+  //   generateButton.addEventListener("click", function () {
+  //     // Access Etherpad's global padeditor object
+  //     if (typeof padeditor !== "undefined" && padeditor.ace) {
+  //       // Retrieve the pad content
+  //       const padContent = padeditor.ace.exportText(); // Exports the entire text content of the pad
+  //       console.log("Pad Content:", padContent);
+  //     } else {
+  //       console.error("Etherpad's padeditor or Ace editor is not initialized.");
+  //     }
+  //   });
+  // }
+
+  // Get selected content from pad
+  // if (generateButton) {
+  //   generateButton.addEventListener("click", function () {
+  //   if (typeof padeditor !== "undefined" && padeditor.ace) {
+  //     console.log("Calling Ace editor API...");
+  //     padeditor.ace.callWithAce((ace) => {
+  //       const rep = ace.ace_getRep();
+  //       const selStart = rep.selStart;
+  //       const selEnd = rep.selEnd;
+
+  //       if (selStart && selEnd) {
+  //         const lines = rep.lines.slice(selStart[0], selEnd[0] + 1);
+  //         let selectedText = "";
+
+  //         lines.forEach((line, index) => {
+  //           const startCol = index === 0 ? selStart[1] : 0;
+  //           const endCol = index === lines.length - 1 ? selEnd[1] : line.text.length;
+  //           selectedText += line.text.substring(startCol, endCol);
+
+  //           if (index < lines.length - 1) {
+  //             selectedText += "\n";
+  //           }
+  //         });
+
+  //         console.log("Selected Text:", selectedText);
+
+  //         // Update modal content and open modal
+  //         modalContent.textContent = selectedText || "No text selected.";
+  //         modal.style.display = "flex";
+  //         console.log("Modal opened with content.");
+  //       } else {
+  //         console.warn("No text selected.");
+  //       }
+  //     }, "getSelectedText", true);
+  //   } else {
+  //     console.error("Etherpad's padeditor or Ace editor is not initialized.");
+  //   }
+  // });
 
   window.addEventListener("beforeunload", () => {
     session.close();
@@ -1907,6 +1958,44 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Initialize when Generate Button is Clicked
   generateButton.addEventListener("click", function () {
+
+    if (typeof padeditor !== "undefined" && padeditor.ace) {
+      console.log("Calling Ace editor API...");
+      padeditor.ace.callWithAce(
+        (ace) => {
+          const rep = ace.ace_getRep();
+          const selStart = rep.selStart;
+          const selEnd = rep.selEnd;
+
+          if (selStart && selEnd) {
+            const lines = rep.lines.slice(selStart[0], selEnd[0] + 1);
+            let selectedText = "";
+
+            lines.forEach((line, index) => {
+              const startCol = index === 0 ? selStart[1] : 0;
+              const endCol = index === lines.length - 1 ? selEnd[1] : line.text.length;
+              selectedText += line.text.substring(startCol, endCol);
+
+              if (index < lines.length - 1) {
+                selectedText += "\n";
+              }
+            });
+
+            console.log("Selected Text:", selectedText);
+
+            modal.style.display = "flex";
+            console.log("Modal opened with content.");
+          } else {
+            console.warn("No text selected.");
+          }
+        },
+        "getSelectedText",
+        true
+      );
+    } else {
+      console.error("Etherpad's padeditor or Ace editor is not initialized.");
+    }
+
     modal.style.display = "flex";
     console.log("Mind map generation started.");
 
@@ -2092,49 +2181,49 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function update() {
       console.log("Updating visualization...");
-    
+
       // Ensure nodeColorMap persists across updates
       if (!window.nodeColorMap) {
         window.nodeColorMap = new Map(); // Initialize persistent nodeColorMap
       }
-    
+
       // Preserve existing positions
       const nodePositionMap = new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }]));
-    
+
       // Build hierarchy for nodes with links
       const hierarchyData = buildHierarchy(nodes, links);
-    
+
       // Update depths for all nodes in the hierarchy
       hierarchyData.each((node) => {
         const dataNode = nodes.find((n) => n.id === node.data.id);
         if (dataNode) {
           dataNode.depth = node.depth;
-    
+
           // Assign color for the depth if not already in the colorMap
           if (!colorMap[node.depth]) {
             colorMap[node.depth] = defaultColorScale(node.depth);
           }
         }
       });
-    
+
       // Assign depth 0 color to standalone nodes and ensure color persistence
       const rootColor = colorMap[0] || defaultColorScale(0);
       nodes.forEach((node) => {
         const isStandalone = !links.some((link) => link.source === node.id || link.target === node.id);
-    
+
         if (isStandalone && node.depth === undefined) {
           node.depth = 0; // Assign root depth if undefined
         }
-    
+
         // Assign color only if not already present in the persistent map
         if (!window.nodeColorMap.has(node.id)) {
           const color = isStandalone ? rootColor : colorMap[node.depth] || defaultColorScale(node.depth);
           window.nodeColorMap.set(node.id, color);
         }
       });
-    
+
       console.log("Color Map:", colorMap);
-    
+
       // Update Links
       const link = linkGroup
         .selectAll("line")
@@ -2144,7 +2233,7 @@ document.addEventListener("DOMContentLoaded", function () {
           (update) => update,
           (exit) => exit.remove()
         );
-    
+
       // Update Nodes
       const node = nodeGroup
         .selectAll("g")
@@ -2157,10 +2246,10 @@ document.addEventListener("DOMContentLoaded", function () {
               .on("click", (event, d) => {
                 selectedLevel = d.depth;
                 console.log("Selected Level:", selectedLevel);
-    
+
                 const colorPickerContainer = document.getElementById("color-picker-container");
                 const colorPicker = document.getElementById("color-picker");
-    
+
                 colorPickerContainer.style.display = "block"; // Show color picker
                 colorPicker.value = colorMap[selectedLevel] || defaultColorScale(d.depth || 0); // Set to current color
               })
@@ -2172,10 +2261,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.style.left = `${event.pageX}px`;
                 input.style.top = `${event.pageY}px`;
                 input.style.zIndex = 1000;
-    
+
                 document.body.appendChild(input);
                 input.focus();
-    
+
                 input.addEventListener("blur", async () => {
                   const updatedText = input.value.trim();
                   if (updatedText && updatedText !== d.text) {
@@ -2184,7 +2273,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         oldName: d.text,
                         newName: updatedText,
                       });
-    
+
                       d.text = updatedText;
                       d3.select(event.target.parentNode).select("text").text(updatedText);
                       console.log("Node updated successfully:", updatedText);
@@ -2194,10 +2283,10 @@ document.addEventListener("DOMContentLoaded", function () {
                   }
                   document.body.removeChild(input);
                 });
-    
+
                 event.stopPropagation();
               });
-    
+
             nodeEnter
               .append("ellipse")
               .attr("rx", (d) => Math.max(30, d.text.length * 5))
@@ -2205,13 +2294,13 @@ document.addEventListener("DOMContentLoaded", function () {
               .attr("fill", (d) => window.nodeColorMap.get(d.id)) // Use persistent color map
               .attr("stroke", "#333")
               .attr("stroke-width", 2);
-    
+
             nodeEnter
               .append("text")
               .attr("text-anchor", "middle")
               .attr("alignment-baseline", "middle")
               .text((d) => d.text);
-    
+
             return nodeEnter;
           },
           (update) =>
@@ -2229,16 +2318,15 @@ document.addEventListener("DOMContentLoaded", function () {
               .attr("fill", (d) => window.nodeColorMap.get(d.id)), // Use persistent color map
           (exit) => exit.remove()
         );
-    
+
       // Restart simulation for only new nodes
       simulation.nodes(nodes);
       simulation.force("link").links(links);
       simulation.alpha(1).restart();
-    
+
       console.log("Nodes:", nodes);
       console.log("Links:", links);
     }
-    
 
     // Add Event Listener for Color Picker
     document.getElementById("color-picker").addEventListener("input", (event) => {
@@ -2404,7 +2492,7 @@ document.addEventListener("DOMContentLoaded", function () {
           } else {
             console.error("Failed to create a valid new node:", newNode);
           }
-          
+
           nodes.push(newNode);
 
           update();
