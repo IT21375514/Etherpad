@@ -442,34 +442,40 @@
     <div style="display: none"><a href="/javascript" data-jslicense="1">JavaScript license information</a></div>
     <% e.end_block(); %>
 
-    <div id="mindmap-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center; overflow: auto">
-      <div style="background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); max-width: 90%; width: 90%; height: 90%; text-align: center; position: relative">
+    <!-- Modal Wrapper -->
+    <div id="mindmap-modal" style="display: none; /* Hidden by default; toggle with JS */ position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; /* Center modal content horizontally */ align-items: center; /* Center modal content vertically */ overflow: hidden; /* Prevent spilling outside the screen */">
+      <!-- Modal Content Box -->
+      <div style="background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); max-width: 90%; /* Prevent exceeding viewport width */ max-height: 90%; /* Prevent exceeding viewport height */ width: 90%; /* Adjust as desired */ height: 90%; /* Adjust as desired */ text-align: center; position: relative; display: flex; /* Flex container for column layout */ flex-direction: column; overflow: auto; /* Scroll if content exceeds box */">
         <h2 style="margin: 0 0 20px; font-size: 1.5rem; color: #333">Mind Map</h2>
 
-        <!-- Buttons for customization -->
+        <!-- Customization Buttons & Inputs -->
         <div style="margin-bottom: 10px">
           <div style="margin-top: 20px">
             <input type="text" id="new-node-name" placeholder="Enter new node name" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 50%" />
             <button id="add-node" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Add Node</button>
             <button id="download-map" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Download</button>
           </div>
+
           <div style="margin-top: 20px">
             <input type="text" id="add-relation-source" placeholder="Enter new relation source" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 35%" />
             <input type="text" id="add-relation-target" placeholder="Enter new relation target" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 35%" />
             <button id="add-relation" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Add Relation</button>
           </div>
+
           <div id="color-picker-container" style="display: none; margin-top: 10px">
             <label for="color-picker">Change Level Color:</label>
             <input type="color" id="color-picker" value="#FFFFFF" />
           </div>
         </div>
 
-        <div id="mindmap-container" style="width: 100%; height: 80%; border: 1px solid #ccc; position: relative">
+        <!-- Mind Map Container -->
+        <div id="mindmap-container" style="width: 100%; /* Leaves space for buttons above */ border: 1px solid #ccc; position: relative; overflow: hidden; /* Scroll if mind map is huge */ flex-grow: 1; /* Fill remaining vertical space */">
           <div id="graph-visualization" style="width: 100%; height: 100%"></div>
         </div>
 
-        <button id="close-modal" style="margin-top: 10px; padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer">Close</button>
+        <button id="close-modal" style="margin-top: 10px; padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; align-self: center; /* Center this button horizontally */">Close</button>
       </div>
     </div>
+
   </body>
 </html>
