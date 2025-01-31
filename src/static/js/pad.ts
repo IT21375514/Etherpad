@@ -2051,15 +2051,15 @@ document.addEventListener("DOMContentLoaded", function () {
       try {
         // Skip the actual fetch call, and just return mock data
         let data;
-    
+
         defaultColorScale = d3.scaleOrdinal(d3.schemeCategory10);
         colorMap = {};
         window.nodeColorMap = new Map();
-        
+
         // Check the user’s selected text. If you store `selectedText` in a higher scope,
         // you can do something like:
         const chosen = selectedText.trim(); // or however you read it
-    
+
         // Based on user input, set `data`
         if (chosen === "1") {
           data = {
@@ -2085,9 +2085,7 @@ document.addEventListener("DOMContentLoaded", function () {
                   },
                   {
                     name: "Large Information Frameworks",
-                    subnodes: [
-                      { name: "IOT Information Collection and Storage", subnodes: [] },
-                    ],
+                    subnodes: [{ name: "IOT Information Collection and Storage", subnodes: [] }],
                   },
                 ],
               },
@@ -2177,31 +2175,29 @@ document.addEventListener("DOMContentLoaded", function () {
             ],
           };
         }
-    
+
         // "data" now contains the mindmap => parse it as if from API
         console.log("Mock Data Chosen:", data);
-    
+
         // Clear previous data
         nodes.splice(0, nodes.length);
         links.splice(0, links.length);
-    
+
         // Recursively traverse the returned structure
         if (data && data.mindmap && Array.isArray(data.mindmap)) {
           data.mindmap.forEach((mindmapNode) => {
             traverseMindmap(mindmapNode, null);
           });
         }
-    
+
         // After populating nodes/links, update the visualization
         const hierarchyData = buildHierarchy(nodes, links);
         applyTreeLayout(hierarchyData);
         update(); // Re-render
-    
       } catch (error) {
         console.error("Error fetching data from mock data:", error);
       }
     }
-    
 
     function traverseMindmap(nodeData, parentData) {
       if (!nodeData || !nodeData.name) return;
@@ -2367,7 +2363,7 @@ document.addEventListener("DOMContentLoaded", function () {
             node.depth = found ? found.depth : 0;
           }
         }
-        
+
         // Update color
         const newColor = colorMap[node.depth] || defaultColorScale(node.depth);
         window.nodeColorMap.set(node.id, newColor);
@@ -2435,7 +2431,30 @@ document.addEventListener("DOMContentLoaded", function () {
                   const updatedText = input.value.trim();
                   if (updatedText && updatedText !== d.text) {
                     // Just update the array + D3 text
+                    // 1) Update the node’s text
                     d.text = updatedText;
+
+                    // 2) If you use the node’s id as a unique identifier, rename it in the nodes array and links
+                    const oldID = d.id;
+                    d.id = updatedText; // or keep some stable ID if needed
+
+                    // 3) Update the name in the top-level `nodes` array
+                    const nodeObj = nodes.find((n) => n.id === oldID);
+                    if (nodeObj) {
+                      nodeObj.id = updatedText;
+                      nodeObj.text = updatedText;
+                    }
+
+                    // 4) Update any links referencing the old node id
+                    links.forEach((link) => {
+                      if (link.source === oldID) {
+                        link.source = updatedText;
+                      }
+                      if (link.target === oldID) {
+                        link.target = updatedText;
+                      }
+                    });
+                    
                     d3.select(event.target.parentNode).select("text").text(updatedText);
                     console.log("Node updated successfully:", updatedText);
                   }
