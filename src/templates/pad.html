@@ -46,6 +46,116 @@
     <% e.end_block(); %>
 
     <link rel="localizations" type="application/l10n+json" href="../locales.json" />
+    <style>
+      /* Container for buttons */
+      .button-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      /* Each row with inputs and buttons */
+      .input-group {
+        display: flex;
+        width: 100%;
+        gap: 10px;
+      }
+
+      /* Adjust input fields and buttons */
+      .input-group input {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      .input-group button {
+        flex-grow: 1;
+        padding: 10px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      /* Mind Map Container */
+      #mindmap-container {
+        width: 100%;
+        border: 1px solid #ccc;
+        position: relative;
+        overflow: hidden;
+        flex-grow: 1;
+      }
+
+      /* Close Button */
+      #close-modal {
+        margin-top: 10px;
+        padding: 10px 20px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        align-self: center;
+      }
+
+      /* Mobile-specific adjustments */
+      @media (max-width: 768px) {
+        /* Move "Add Relation" button to next row */
+        .mobile-move-next {
+          width: 100%;
+          max-width: 300px;
+          margin-top: 10px;
+          align-self: center;
+        }
+
+        /* Move "Download" button to bottom */
+        .mobile-move-bottom {
+          order: 1;
+          width: 100%;
+          max-width: 300px;
+          align-self: center;
+        }
+
+        .input-group {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+      }
+      
+      /* For nodes: only the ellipse stroke blinks */
+      ellipse.blinking {
+        animation: blink-border 1s linear infinite !important;
+      }
+
+      /* For links: keep blinking the entire line */
+      line.blinking {
+        animation: blink-animation 1s linear infinite !important;
+      }
+
+      /* Keyframes for the node border-blink */
+      @keyframes blink-border {
+        0%,
+        100% {
+          stroke-opacity: 1;
+          fill-opacity: 1; /* Keep fill visible */
+        }
+        50% {
+          stroke-opacity: 0;
+          fill-opacity: 1; /* Fill remains visible */
+        }
+      }
+
+      /* Keyframes for the link blink (already existing) */
+      @keyframes blink-animation {
+        50% {
+          opacity: 0;
+        }
+      }
+    </style>
   </head>
   <body>
     <% e.begin_block("body"); %>
@@ -449,20 +559,20 @@
         <h2 style="margin: 0 0 20px; font-size: 1.5rem; color: #333">Mind Map</h2>
 
         <!-- Customization Buttons & Inputs -->
-        <div style="margin-bottom: 10px">
-          <div style="margin-top: 20px">
-            <input type="text" id="new-node-name" placeholder="Enter new node name" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 50%" />
-            <button id="add-node" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Add Node</button>
-            <button id="download-map" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Download</button>
+        <div class="button-container">
+          <div class="input-group">
+            <input type="text" id="new-node-name" placeholder="Enter new node name" />
+            <button id="add-node">Add Node</button>
+            <button id="download-map" class="mobile-move-bottom">Download</button>
           </div>
 
-          <div style="margin-top: 20px">
-            <input type="text" id="add-relation-source" placeholder="Enter new relation source" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 35%" />
-            <input type="text" id="add-relation-target" placeholder="Enter new relation target" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 35%" />
-            <button id="add-relation" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; width: 20%">Add Relation</button>
+          <div class="input-group">
+            <input type="text" id="add-relation-source" placeholder="Enter new relation source" />
+            <input type="text" id="add-relation-target" placeholder="Enter new relation target" />
+            <button id="add-relation" class="mobile-move-next">Add Relation</button>
           </div>
 
-          <div id="color-picker-container" style="display: none; margin-top: 10px">
+          <div id="color-picker-container" style="display: none">
             <label for="color-picker">Change Level Color:</label>
             <input type="color" id="color-picker" value="#FFFFFF" />
           </div>
@@ -476,6 +586,5 @@
         <button id="close-modal" style="margin-top: 10px; padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; align-self: center; /* Center this button horizontally */">Close</button>
       </div>
     </div>
-
   </body>
 </html>
