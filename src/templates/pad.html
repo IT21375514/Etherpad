@@ -92,7 +92,6 @@
 
       /* Close Button */
       #close-modal {
-        margin-top: 10px;
         padding: 10px 20px;
         background-color: #f44336;
         color: white;
@@ -125,7 +124,7 @@
           justify-content: center;
         }
       }
-      
+
       /* For nodes: only the ellipse stroke blinks */
       ellipse.blinking {
         animation: blink-border 1s linear infinite !important;
@@ -174,7 +173,7 @@
       </ul>
       <span class="show-more-icon-btn"></span>
       <!-- use on small screen to display hidden toolbar buttons -->
-
+      <button id="calculate-images" style="margin-left: 10px; padding: 5px 15px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer">Calculate</button>
       <button id="generate-mindmap" style="margin-left: 10px; padding: 5px 15px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer">Generate Mind Map</button>
     </div>
 
@@ -556,7 +555,12 @@
     <div id="mindmap-modal" style="display: none; /* Hidden by default; toggle with JS */ position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; /* Center modal content horizontally */ align-items: center; /* Center modal content vertically */ overflow: hidden; /* Prevent spilling outside the screen */">
       <!-- Modal Content Box -->
       <div style="background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); max-width: 90%; /* Prevent exceeding viewport width */ max-height: 90%; /* Prevent exceeding viewport height */ width: 90%; /* Adjust as desired */ height: 90%; /* Adjust as desired */ text-align: center; position: relative; display: flex; /* Flex container for column layout */ flex-direction: column; overflow: auto; /* Scroll if content exceeds box */">
-        <h2 style="margin: 0 0 20px; font-size: 1.5rem; color: #333">Mind Map</h2>
+        
+        <!-- Title and Close Button Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px;">
+          <h2 style="margin: 0 auto; font-size: 1.5rem; color: #333">Mind Map</h2>
+          <button id="close-modal" style="padding: 5px 10px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer">X</button>
+        </div>
 
         <!-- Customization Buttons & Inputs -->
         <div class="button-container">
@@ -583,7 +587,7 @@
           <div id="graph-visualization" style="width: 100%; height: 100%"></div>
         </div>
 
-        <button id="close-modal" style="margin-top: 10px; padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; align-self: center; /* Center this button horizontally */">Close</button>
+        <!-- <button id="close-modal" style="margin-top: 10px; padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; align-self: center; /* Center this button horizontally */">Close</button> -->
       </div>
     </div>
   </body>

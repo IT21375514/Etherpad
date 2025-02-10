@@ -3588,3 +3588,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
 //   });
 // });
+
+
+$(document).ready(function () {
+  console.log("Custom image detection script loaded.");
+
+  // Function to detect images, alt text, and filenames
+  function logImages() {
+      const images = document.querySelectorAll("iframe[name='ace_outer']")[0]
+          .contentDocument.querySelector("iframe[name='ace_inner']")
+          .contentDocument.querySelectorAll("img");  // Get images inside the pad
+
+      const imageDetails = Array.from(images).map(img => ({
+          src: img.src,
+          alt: img.alt || "No alt text", // If alt is empty, return "No alt text"
+          filename: img.src.split('/').pop()  // Extract the filename from the URL
+      }));
+
+      console.log("🖼️ Detected Image Details:", imageDetails);
+      console.log("📊 Total Image Count:", imageDetails.length);
+  }
+
+  // Add a click event listener to the 'Calculate' button
+  $('#calculate-images').on('click', logImages);
+});
+
