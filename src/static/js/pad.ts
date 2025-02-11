@@ -2054,142 +2054,172 @@ document.addEventListener("DOMContentLoaded", function () {
     async function fetchFromDatabase() {
       try {
         // Skip the actual fetch call, and just return mock data
-        let data;
 
         defaultColorScale = d3.scaleOrdinal(d3.schemeCategory10);
         colorMap = {};
         window.nodeColorMap = new Map();
 
-        // Check the user’s selected text. If you store `selectedText` in a higher scope,
-        // you can do something like:
-        const chosen = selectedText.trim(); // or however you read it
+        // let data;
 
-        // Based on user input, set `data`
-        if (chosen === "1") {
-          data = {
-            mindmap: [
-              {
-                name: "IOT and Big Data",
-                subnodes: [
-                  {
-                    name: "IOT",
-                    subnodes: [
-                      { name: "Main Application of Big Data", subnodes: [] },
-                      { name: "High Diversity of Things", subnodes: [] },
-                      { name: "Machine-to-Machine Communication", subnodes: [] },
-                      {
-                        name: "Track and Locate Positions of Vehicles",
-                        subnodes: [
-                          { name: "Sensor Data", subnodes: [] },
-                          { name: "Wireless Adaptors", subnodes: [] },
-                          { name: "GPS", subnodes: [] },
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    name: "Large Information Frameworks",
-                    subnodes: [{ name: "IOT Information Collection and Storage", subnodes: [] }],
-                  },
-                ],
-              },
-            ],
-          };
-        } else if (chosen === "2") {
-          data = {
-            mindmap: [
-              {
-                name: "Artificial Neural Networks (ANN)",
-                subnodes: [
-                  { name: "Developed based on Biological Neurons", subnodes: [] },
-                  {
-                    name: "Perceptron",
-                    subnodes: [
-                      { name: "Trained to Predict", subnodes: [] },
-                      { name: "Fixed Threshold", subnodes: [] },
-                    ],
-                  },
-                  {
-                    name: "Architecture",
-                    subnodes: [
-                      { name: "Many Inputs", subnodes: [] },
-                      { name: "Multiple Processing Layers", subnodes: [] },
-                      { name: "Many Outputs", subnodes: [] },
-                    ],
-                  },
-                  {
-                    name: "Complex Data",
-                    subnodes: [
-                      { name: "Classification Tasks", subnodes: [] },
-                      { name: "Regression Tasks", subnodes: [] },
-                    ],
-                  },
-                ],
-              },
-            ],
-          };
-        } else {
-          data = {
-            mindmap: [
-              {
-                name: "Machine Learning in Healthcare",
-                subnodes: [
-                  {
-                    name: "Overview",
-                    subnodes: [
-                      { name: "Widely used in applications and research", subnodes: [] },
-                      { name: "Crucial role in numerous fields", subnodes: [] },
-                      {
-                        name: "Applications",
-                        subnodes: [
-                          { name: "Diagnose sizeable medical data patterns", subnodes: [] },
-                          { name: "Predict diseases", subnodes: [] },
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    name: "Survey",
-                    subnodes: [
-                      {
-                        name: "Purpose",
-                        subnodes: [
-                          { name: "Highlight previous work", subnodes: [] },
-                          { name: "Provide information to researchers", subnodes: [] },
-                        ],
-                      },
-                      {
-                        name: "Machine Learning Algorithms",
-                        subnodes: [
-                          { name: "Overview", subnodes: [] },
-                          { name: "Applications in healthcare", subnodes: [] },
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    name: "Advantages",
-                    subnodes: [
-                      { name: "Efficient support infrastructure for medical fields", subnodes: [] },
-                      { name: "Improve healthcare services", subnodes: [] },
-                    ],
-                  },
-                ],
-              },
-            ],
-          };
+        // // Check the user’s selected text. If you store `selectedText` in a higher scope,
+        // // you can do something like:
+        // const chosen = selectedText.trim(); // or however you read it
+
+        // // Based on user input, set `data`
+        // if (chosen === "1") {
+        //   data = {
+        //     mindmap: [
+        //       {
+        //         name: "IOT and Big Data",
+        //         subnodes: [
+        //           {
+        //             name: "IOT",
+        //             subnodes: [
+        //               { name: "Main Application of Big Data", subnodes: [] },
+        //               { name: "High Diversity of Things", subnodes: [] },
+        //               { name: "Machine-to-Machine Communication", subnodes: [] },
+        //               {
+        //                 name: "Track and Locate Positions of Vehicles",
+        //                 subnodes: [
+        //                   { name: "Sensor Data", subnodes: [] },
+        //                   { name: "Wireless Adaptors", subnodes: [] },
+        //                   { name: "GPS", subnodes: [] },
+        //                 ],
+        //               },
+        //             ],
+        //           },
+        //           {
+        //             name: "Large Information Frameworks",
+        //             subnodes: [{ name: "IOT Information Collection and Storage", subnodes: [] }],
+        //           },
+        //         ],
+        //       },
+        //     ],
+        //   };
+        // } else if (chosen === "2") {
+        //   data = {
+        //     mindmap: [
+        //       {
+        //         name: "Artificial Neural Networks (ANN)",
+        //         subnodes: [
+        //           { name: "Developed based on Biological Neurons", subnodes: [] },
+        //           {
+        //             name: "Perceptron",
+        //             subnodes: [
+        //               { name: "Trained to Predict", subnodes: [] },
+        //               { name: "Fixed Threshold", subnodes: [] },
+        //             ],
+        //           },
+        //           {
+        //             name: "Architecture",
+        //             subnodes: [
+        //               { name: "Many Inputs", subnodes: [] },
+        //               { name: "Multiple Processing Layers", subnodes: [] },
+        //               { name: "Many Outputs", subnodes: [] },
+        //             ],
+        //           },
+        //           {
+        //             name: "Complex Data",
+        //             subnodes: [
+        //               { name: "Classification Tasks", subnodes: [] },
+        //               { name: "Regression Tasks", subnodes: [] },
+        //             ],
+        //           },
+        //         ],
+        //       },
+        //     ],
+        //   };
+        // } else {
+        //   data = {
+        //     mindmap: [
+        //       {
+        //         name: "Machine Learning in Healthcare",
+        //         subnodes: [
+        //           {
+        //             name: "Overview",
+        //             subnodes: [
+        //               { name: "Widely used in applications and research", subnodes: [] },
+        //               { name: "Crucial role in numerous fields", subnodes: [] },
+        //               {
+        //                 name: "Applications",
+        //                 subnodes: [
+        //                   { name: "Diagnose sizeable medical data patterns", subnodes: [] },
+        //                   { name: "Predict diseases", subnodes: [] },
+        //                 ],
+        //               },
+        //             ],
+        //           },
+        //           {
+        //             name: "Survey",
+        //             subnodes: [
+        //               {
+        //                 name: "Purpose",
+        //                 subnodes: [
+        //                   { name: "Highlight previous work", subnodes: [] },
+        //                   { name: "Provide information to researchers", subnodes: [] },
+        //                 ],
+        //               },
+        //               {
+        //                 name: "Machine Learning Algorithms",
+        //                 subnodes: [
+        //                   { name: "Overview", subnodes: [] },
+        //                   { name: "Applications in healthcare", subnodes: [] },
+        //                 ],
+        //               },
+        //             ],
+        //           },
+        //           {
+        //             name: "Advantages",
+        //             subnodes: [
+        //               { name: "Efficient support infrastructure for medical fields", subnodes: [] },
+        //               { name: "Improve healthcare services", subnodes: [] },
+        //             ],
+        //           },
+        //         ],
+        //       },
+        //     ],
+        //   };
+        // }
+
+        // // "data" now contains the mindmap => parse it as if from API
+        // console.log("Mock Data Chosen:", data);
+
+        // // Clear previous data
+        // nodes.splice(0, nodes.length);
+        // links.splice(0, links.length);
+
+        // // Recursively traverse the returned structure
+        // if (data && data.mindmap && Array.isArray(data.mindmap)) {
+        //   data.mindmap.forEach((mindmapNode) => {
+        //     traverseMindmap(mindmapNode, null);
+        //   });
+        // }
+
+        // Adjust URL/endpoint as needed:
+        const baseApiUrl = "https://616b-34-34-37-161.ngrok-free.app";
+        const endpoint = "generate";
+
+        const response = await fetch(`${baseApiUrl}/${endpoint}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input_text: selectedText }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
         }
 
-        // "data" now contains the mindmap => parse it as if from API
-        console.log("Mock Data Chosen:", data);
+        const data = await response.json();
+        console.log("Parsed JSON Data:", data);
+        const mindmapRoot = data.response;
 
         // Clear previous data
         nodes.splice(0, nodes.length);
         links.splice(0, links.length);
 
         // Recursively traverse the returned structure
-        if (data && data.mindmap && Array.isArray(data.mindmap)) {
-          data.mindmap.forEach((mindmapNode) => {
+        if (mindmapRoot && mindmapRoot.mindmap && Array.isArray(mindmapRoot.mindmap)) {
+          mindmapRoot.mindmap.forEach((mindmapNode) => {
             traverseMindmap(mindmapNode, null);
           });
         }
@@ -2673,36 +2703,36 @@ document.addEventListener("DOMContentLoaded", function () {
       addRelation.addEventListener("click", function () {
         const sourceName = document.getElementById("add-relation-source").value.trim();
         const targetName = document.getElementById("add-relation-target").value.trim();
-    
+
         if (!sourceName || !targetName) {
           alert("Please enter both source and target node names.");
           return;
         }
-    
+
         if (sourceName === targetName) {
           alert("Source and target nodes cannot be the same.");
           return;
         }
-    
+
         const sourceNode = nodes.find((node) => node.id === sourceName);
         const targetNode = nodes.find((node) => node.id === targetName);
-    
+
         if (!sourceNode || !targetNode) {
           alert("One or both nodes do not exist. Please enter valid node names.");
           return;
         }
-    
+
         console.log(`✅ Relation added (in arrays): ${sourceName} → ${targetName}`);
-    
+
         links.push({ source: sourceName, target: targetName, type: "HAS_SUBNODE" });
-    
+
         // Step 1: Only update depth of target node, based on its new parent
         const nodeMap = new Map(nodes.map((node) => [node.id, node]));
         targetNode.depth = sourceNode.depth + 1; // Ensure the new child is exactly one level deeper
-    
+
         // Step 2: Update depths of all descendants of the newly linked node
         updateDepthsRecursively(targetNode, nodeMap, links);
-    
+
         // Step 3: Ensure colors update based on the new depths
         nodes.forEach((node) => {
           if (!colorMap[node.depth]) {
@@ -2710,16 +2740,15 @@ document.addEventListener("DOMContentLoaded", function () {
           }
           window.nodeColorMap.set(node.id, colorMap[node.depth]);
         });
-    
+
         update(); // Refresh visualization
-    
+
         document.getElementById("add-relation-source").value = "";
         document.getElementById("add-relation-target").value = "";
       });
-    
+
       isAddRelationListenerAttached = true;
     }
-    
 
     function updateBlinking() {
       // Remove blinking from all nodes and links
@@ -2745,15 +2774,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // Helper function to recursively update depths of descendants
     function updateDepthsRecursively(node, nodeMap, links) {
       let queue = [{ node, depth: node.depth }];
-    
+
       while (queue.length > 0) {
         let { node, depth } = queue.shift();
         node.depth = depth; // Assign correct depth
-    
-        let children = links
-          .filter((l) => (typeof l.source === "object" ? l.source.id === node.id : l.source === node.id))
-          .map((l) => nodeMap.get(typeof l.target === "object" ? l.target.id : l.target));
-    
+
+        let children = links.filter((l) => (typeof l.source === "object" ? l.source.id === node.id : l.source === node.id)).map((l) => nodeMap.get(typeof l.target === "object" ? l.target.id : l.target));
+
         children.forEach((child) => {
           if (child) {
             queue.push({ node: child, depth: depth + 1 });
@@ -2761,32 +2788,28 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       }
     }
-    
+
     if (!isDeleteListenerAttached) {
       document.addEventListener("keydown", function (event) {
         if (event.key === "Delete") {
           let hierarchyData;
           let deletedNodeId = null;
           let affectedNodes = new Set();
-    
+
           if (selectedNode) {
             deletedNodeId = selectedNode.id;
             console.log(`🗑️ Deleting node: ${deletedNodeId}`);
-    
-            let children = links
-              .filter((l) => (typeof l.source === "object" ? l.source.id === deletedNodeId : l.source === deletedNodeId))
-              .map((l) => (typeof l.target === "object" ? l.target.id : l.target));
-    
+
+            let children = links.filter((l) => (typeof l.source === "object" ? l.source.id === deletedNodeId : l.source === deletedNodeId)).map((l) => (typeof l.target === "object" ? l.target.id : l.target));
+
             console.log(`🚸 Children of deleted node: ${children}`);
-    
-            let parentNode = links.find((l) =>
-              typeof l.target === "object" ? l.target.id === deletedNodeId : l.target === deletedNodeId
-            );
-    
+
+            let parentNode = links.find((l) => (typeof l.target === "object" ? l.target.id === deletedNodeId : l.target === deletedNodeId));
+
             let parentId = parentNode ? (typeof parentNode.source === "object" ? parentNode.source.id : parentNode.source) : null;
-    
+
             console.log(`👨‍👩‍👧 Parent of deleted node: ${parentId}`);
-    
+
             nodes = nodes.filter((n) => n.id !== deletedNodeId);
             links = links.filter((l) => {
               if (typeof l.source === "object") {
@@ -2795,18 +2818,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 return l.source !== deletedNodeId && l.target !== deletedNodeId;
               }
             });
-    
+
             // Assign children their correct depths instead of promoting
             children.forEach((childId) => {
               affectedNodes.add(childId);
             });
-    
+
             selectedNode = null;
           } else if (selectedLink) {
             console.log(`🗑️ Deleting link: ${selectedLink.source.id} → ${selectedLink.target.id}`);
             let orphanNode = selectedLink.target.id;
             affectedNodes.add(orphanNode);
-    
+
             links = links.filter((l) => {
               if (typeof l.source === "object") {
                 return !(l.source.id === selectedLink.source.id && l.target.id === selectedLink.target.id);
@@ -2814,23 +2837,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 return !(l.source === selectedLink.source && l.target === selectedLink.target);
               }
             });
-    
+
             selectedLink = null;
           }
-    
+
           // Step 1: Recalculate hierarchy
           hierarchyData = buildHierarchy(nodes, links);
-    
+
           // Step 2: Update depth for each affected node
           const nodeMap = new Map(nodes.map((node) => [node.id, node]));
-    
+
           affectedNodes.forEach((nodeId) => {
             let node = nodeMap.get(nodeId);
             if (node) {
               const parentLink = links.find((l) => {
                 return typeof l.target === "object" ? l.target.id === node.id : l.target === node.id;
               });
-    
+
               if (parentLink) {
                 let parent = nodeMap.get(typeof parentLink.source === "object" ? parentLink.source.id : parentLink.source);
                 node.depth = parent ? parent.depth + 1 : 0;
@@ -2838,12 +2861,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.log(`🔄 Orphaned node '${node.id}' assigned to root level.`);
                 node.depth = 0;
               }
-    
+
               // Recursively update depths of descendants
               updateDepthsRecursively(node, nodeMap, links);
             }
           });
-    
+
           // Step 3: Update colors based on new depth levels
           nodes.forEach((node) => {
             if (!colorMap[node.depth]) {
@@ -2851,19 +2874,20 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             window.nodeColorMap.set(node.id, colorMap[node.depth]);
           });
-    
-          console.log("Updated Node Depths:", nodes.map((n) => ({ id: n.id, depth: n.depth })));
+
+          console.log(
+            "Updated Node Depths:",
+            nodes.map((n) => ({ id: n.id, depth: n.depth }))
+          );
           console.log("Updated Color Map:", colorMap);
           console.log("Updated Links:", links);
-    
+
           updateBlinking();
           update();
         }
       });
       isDeleteListenerAttached = true;
     }
-    
-        
   });
 });
 
@@ -3589,27 +3613,23 @@ document.addEventListener("DOMContentLoaded", function () {
 //   });
 // });
 
-
 $(document).ready(function () {
   console.log("Custom image detection script loaded.");
 
   // Function to detect images, alt text, and filenames
   function logImages() {
-      const images = document.querySelectorAll("iframe[name='ace_outer']")[0]
-          .contentDocument.querySelector("iframe[name='ace_inner']")
-          .contentDocument.querySelectorAll("img");  // Get images inside the pad
+    const images = document.querySelectorAll("iframe[name='ace_outer']")[0].contentDocument.querySelector("iframe[name='ace_inner']").contentDocument.querySelectorAll("img"); // Get images inside the pad
 
-      const imageDetails = Array.from(images).map(img => ({
-          src: img.src,
-          alt: img.alt || "No alt text", // If alt is empty, return "No alt text"
-          filename: img.src.split('/').pop()  // Extract the filename from the URL
-      }));
+    const imageDetails = Array.from(images).map((img) => ({
+      src: img.src,
+      alt: img.alt || "No alt text", // If alt is empty, return "No alt text"
+      filename: img.src.split("/").pop(), // Extract the filename from the URL
+    }));
 
-      console.log("🖼️ Detected Image Details:", imageDetails);
-      console.log("📊 Total Image Count:", imageDetails.length);
+    console.log("🖼️ Detected Image Details:", imageDetails);
+    console.log("📊 Total Image Count:", imageDetails.length);
   }
 
   // Add a click event listener to the 'Calculate' button
-  $('#calculate-images').on('click', logImages);
+  $("#calculate-images").on("click", logImages);
 });
-
